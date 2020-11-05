@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify
 import flask_cors
 import json
 
-from . import audio
+# from . import audio
 
 DEBUG = True
 
@@ -34,12 +34,13 @@ def most_frequent_words():
 
         return jsonify({
             'status': 'success',
-            'words': words
+            'words': words,
+            'update': 'eshan was here'
         })
 
     elif request.method == 'POST':
         print("trying to listen!")
-        audio.listen()
+        # audio.listen()
 
         return jsonify({
             'status': 'success'
