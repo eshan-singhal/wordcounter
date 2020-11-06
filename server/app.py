@@ -21,7 +21,7 @@ def save_db(db):
     with open("words.db", "w") as f:
         json.dump(db, f, indent=4)
 
-@app.route('/', methods=['GET', 'POST'])
+@app.route('/frequent', methods=['GET'])
 def most_frequent_words():
     if request.method == 'GET':
         db = get_db()
@@ -38,7 +38,9 @@ def most_frequent_words():
             'update': 'eshan was here'
         })
 
-    elif request.method == 'POST':
+@app.route('/listen', methods=['POST'])
+def listen():
+    if request.method == 'POST':
         print("trying to listen!")
         # audio.listen()
 
