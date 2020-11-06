@@ -37,7 +37,7 @@ export default {
   },
   methods: {
     Listen() {
-      const path = 'http://localhost:5000/';
+      const path = '/api/listen';
       axios.post(path)
         .then(() => {
           this.getWords();
@@ -48,7 +48,7 @@ export default {
         });
     },
     getWords() {
-      const path = 'http://localhost:5000/';
+      const path = '/api/frequent';
       axios.get(path)
         .then((res) => {
           this.words = res.data.words;

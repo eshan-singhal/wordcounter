@@ -1,4 +1,4 @@
-import 'bootstrap/dist/css/bootstrap.css';
+//import 'bootstrap/dist/css/bootstrap.css';
 //import BootstrapVue from 'bootstrap-vue';
 import Vue from 'vue'
 import App from './App.vue'
