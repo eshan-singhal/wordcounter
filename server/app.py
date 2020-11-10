@@ -23,20 +23,20 @@ def save_db(db):
 
 @app.route('/frequent', methods=['GET'])
 def most_frequent_words():
-    if request.method == 'GET':
-        db = get_db()
-        
-        words = [
-            {"word": word,
-            "frequency": frequency}
-            for word, frequency in db.most_common(10)
-            ]
+    db = get_db()
+    
+    words = [
+        {
+            "word": word,
+            "frequency": frequency
+        }
+        for word, frequency in db.most_common(10)
+        ]
 
-        return jsonify({
-            'status': 'success',
-            'words': words,
-            'update': 'eshan was here'
-        })
+    return jsonify({
+        'status': 'success',
+        'words': words,
+    })
 
 @app.route('/listen', methods=['POST'])
 def listen():
@@ -48,31 +48,29 @@ def listen():
             'status': 'success'
         })
 
-@app.route('/substring', methods=['GET'])
+@app.route('/substring', methods=['POST'])
 def substring():
-    sub = request.form['sub']
+    sub = request.json['sub']
     db = get_db()
 
-    matches = {
-        word: db[word]
+    words = [
+        {
+            "word": word,
+            "frequency": db[word]
+        }
         for word in db
         if sub in word
-        }
+        ]
 
-    if not matches:
-        return "No words matched substring {}".format(sub)
-
-    return matches
-
-@app.route('/count/<word>', methods=['GET'])
-def get_word_count(word):
-    db = get_db()
-    return "{} has been said {} times".format(word, str(db.get(word, 0)))
+    return jsonify({
+        'status': 'success',
+        'words': words,
+    })
 
 @app.route('/add', methods=['PUT'])
 def add_word():
     db = get_db()
-    word = request.form['word']
+    word = request.json['word']
 
     try:
         db[word] += 1
@@ -81,7 +79,9 @@ def add_word():
 
     save_db(db)
 
-    return "Added {} to database".format(word)
+    return jsonify({
+        'status': 'success'
+    })
 
 
 

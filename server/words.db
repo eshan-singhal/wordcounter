@@ -2,7 +2,7 @@
     "this": 1,
     "is": 4,
     "a": 4,
-    "test": 20,
+    "test": 25,
     "what": 1,
     "text": 1,
     "we": 3,
@@ -49,5 +49,6 @@
     "how": 1,
     "cool": 1,
     "that": 1,
-    "clothes": 9
+    "clothes": 10,
+    "foo": 5
 }
