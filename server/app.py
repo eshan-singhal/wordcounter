@@ -1,7 +1,9 @@
 import collections
 from flask import Flask, request, jsonify
-import flask_cors
+from flask_cors import CORS
 import json
+import os
+import psycopg2
 
 # from . import audio
 
@@ -9,29 +11,55 @@ DEBUG = True
 
 app = Flask(__name__)
 
-flask_cors.CORS(app, resources={r'/*': {'origins': '*'}})
+_DB_CONN = None
 
-def get_db():
-    with open("words.db") as f:
-        db = collections.Counter(json.load(f))
-        
-    return db
+CORS(app, resources={r'/*': {'origins': '*'}})
 
-def save_db(db):
-    with open("words.db", "w") as f:
-        json.dump(db, f, indent=4)
+def get_db_conn():
+    global _DB_CONN
+    if _DB_CONN is None:
+        try:
+            _DB_CONN = psycopg2.connect(
+                user=os.environ.get("PGUSER"),
+                password=os.environ.get("PGPASSWORD"),
+                host=os.environ.get("PGHOST"),
+                port=os.environ.get("PGPORT"),
+                database=os.environ.get("PGDATABASE")
+            )
+
+            with _DB_CONN.cursor() as cur:
+
+                cur.execute(
+                    """
+                    CREATE TABLE IF NOT EXISTS words
+                    (
+                        word varchar PRIMARY KEY NOT NULL,
+                        frequency integer NOT NULL
+                    );
+                    """
+                    )
+        except (Exception, psycopg2.Error) as error:
+            print("Error connecting to PostgreSQL", error)
+
+    return _DB_CONN
 
 @app.route('/frequent', methods=['GET'])
 def most_frequent_words():
-    db = get_db()
-    
-    words = [
-        {
-            "word": word,
-            "frequency": frequency
-        }
-        for word, frequency in db.most_common(10)
-        ]
+    with get_db_conn() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT * FROM words ORDER BY frequency DESC LIMIT 10
+                """
+                )
+        
+            words = [
+                {
+                    "word": word,
+                    "frequency": frequency
+                }
+                for word, frequency in cur
+                ]
 
     return jsonify({
         'status': 'success',
@@ -51,16 +79,24 @@ def listen():
 @app.route('/substring', methods=['POST'])
 def substring():
     sub = request.json['sub']
-    db = get_db()
+    
+    with get_db_conn() as conn:
+        with conn.cursor() as cur:
 
-    words = [
-        {
-            "word": word,
-            "frequency": db[word]
-        }
-        for word in db
-        if sub in word
-        ]
+            cur.execute(
+                """
+                SELECT * from words WHERE word LIKE %s ESCAPE ''
+                """,
+                (f"%{sub}%",)
+            )
+
+            words = [
+                {
+                    "word": word,
+                    "frequency": frequency
+                }
+                for word, frequency in cur
+                ]
 
     return jsonify({
         'status': 'success',
@@ -69,19 +105,34 @@ def substring():
 
 @app.route('/add', methods=['PUT'])
 def add_word():
-    db = get_db()
     word = request.json['word']
 
-    try:
-        db[word] += 1
-    except KeyError:
-        db[word] = 1
+    with get_db_conn() as conn:
+        with conn.cursor() as cur:
+            # This update will not do anything
+            # if the word is not in the database
+            cur.execute(
+                """
+                UPDATE words
+                    SET frequency = frequency + 1
+                WHERE word = (%s)
+                """,
+                (word,)
+            )
 
-    save_db(db)
+            # This will add the word
+            # if it is not in the database yet
+            cur.execute(
+                """
+                INSERT INTO words VALUES (%s, %s)
+                ON CONFLICT (word) DO NOTHING
+                """,
+                (word, 1)
+            )
 
     return jsonify({
         'status': 'success'
     })
 
-
-
+if __name__ == "main":
+    app.run()
